@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通讯簿</title>
+  <style>
+    *{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    li{
+      list-style: none;
+    }
+    .container{
+      margin: 0 auto;
+      width: 800px;
+      text-align: center;
+      position: relative;
+    }
+    .container h1{
+      margin-top: 50px;
+      margin-bottom: 30px;
+    }
+    .header{
+      display: flex;
+      justify-content: center;
+      margin: 20px;
+    }
+    input {
+      padding: 5px;
+      width: 100px;
+      height: 20px;
+      border-radius: 2px;
+      border: 1px solid #000;
+      margin-right: 10px;
+    }
+    button{
+      padding: 2px 5px;
+      cursor: pointer;
+    }
+    .info .add{
+      margin-right: 30px;
+    }
+    table {
+      margin:0 auto;
+      width: 700px;
+      border-collapse: collapse;
+    }
+    th {
+      padding: 10px;
+      background: gray;    
+      font-size: 16px;
+      font-weight: 400;
+    }
+    td,th {
+      border:1px solid #b8daff;
+    }
+    td {
+      padding:10px;
+      color:#666;
+      text-align: center;
+      font-size: 16px;
+    }
+    tbody tr {
+      background: #fff;
+    }
+    .pagination{
+      display: flex;
+    }
+    .pagination a{
+      text-decoration: none;
+      color: #423c48;
+      margin: 0 10px;
+    }
+    nav{
+      margin-left: 40px;
+    }
+    .editor{
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      width: 200px;
+      height: 200px;
+      background-color: #fff;
+      position: absolute;
+      z-index: 1;
+      left: 300px;
+      top: 135px;
+      border: 1px solid #656262;
+      display: none;
+    }
+    .editor .confirm{
+      margin-top: 10px;
+      padding: 2px 5px;
+      position: absolute;
+      left: 100px;
+      top: 150px;
+      cursor: pointer;
+      border: 1px solid #000;
+    }
+    .editor .cancel{
+      margin-top: 10px;
+      padding: 2px 5px;
+      position: absolute;
+      left: 150px;
+      top: 150px;
+      cursor: pointer;
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>个人通讯录系统</h1>
+    <div class="header">
+      <form class="info" autocomplete="off">
+        姓名：<input type="text" name="uname" class="uname">
+        电话：<input type="text" name="phone" class="phone">
+        住址：<input type="text" name="address" class="address">
+        <button class="add">添加</button>
+      </form>
+      <input type="text" name="searcher" class="searcher"> 
+      <button class="search">查询</button>
+    </div>
+    <table class="address-book">
+      <thead>
+        <tr>
+          <th>姓名</th>
+          <th>电话</th>
+          <th>住址</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+      </tbody>
+    </table>
+    <div class="editor">
+      姓名：<input type="text" class="uname">
+      电话：<input type="text" class="phone">
+      住址：<input type="text" class="address">
+      <button class="confirm">确定</button>
+      <button class="cancel">取消</button>
+    </div>
+    <!-- 分页 -->
+    <nav>
+      <ul class="pagination">
+        <li class="last">
+          <a class="page-link" href="javascript:;">
+            <span>&laquo;</span>
+          </a>
+        </li>
+        <li class="page-now">
+          第1页
+        </li>
+        <li class="next">
+          <a class="page-link" href="javascript:;">
+            <span>&raquo;</span>
+          </a>
+        </li>
+        <li>
+          <span class="total-count">共0条</span>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    axios.defaults.baseURL = 'http://localhost:8080/user'
+    // 准备查询参数对象
+    const queryObj = {
+      name:'',
+      pageSize:'5',  //当前条数
+      pageNum:'1'  //当前页码
+    }
+    // 全局变量 记录总条数
+    let totalCount = 0
+
+    // 初始页面渲染
+    async function render(){
+      const res = await axios({
+        url:'/page',
+        params:queryObj
+      })
+      
+      const htmlStr = res.data.data.records.map( item => `
+          <tr>
+            <td>${item.name}</td>
+            <td>${item.phoneNumber}</td>
+            <td>${item.address}</td>
+            <td>
+              <a href="#" data-id=${item.id} class="edit">修改</a>
+              <a href="#" data-id=${item.id} class="delete">删除</a>
+            </td>
+          </tr>
+            `).join('')
+          
+          document.querySelector('.address-book tbody').innerHTML = htmlStr
+          totalCount = res.data.data.total
+          document.querySelector('.total-count').innerHTML = `共${totalCount}条`
+    }
+    render()
+
+    // 新增操作
+    document.querySelector('.info').addEventListener('submit',async e => {
+      e.preventDefault()
+      const uname = document.querySelector('[name=uname]').value
+      const phone = document.querySelector('[name=phone]').value
+      const address = document.querySelector('[name=address]').value
+
+      if(phone.length !== 11){
+        return alert('请输入正确的手机号！')
+      }
+      const contactor = {
+        name:uname,
+        phoneNumber:phone,
+        address
+      }
+      // console.log(contactor);
+      e.target.reset()
+
+      const result = await axios({
+        url:'/add',
+        method:'post',
+        data:contactor
+      })
+      // 页面渲染 
+      render()
+      alert('添加成功！')
+    })
+
+    //删除操作
+    document.querySelector('tbody').addEventListener('click',async e => {
+      if(e.target.tagName === 'A' && e.target.classList.contains('delete')){
+        // console.log(e.target.dataset.id);
+        const id = e.target.dataset.id
+        const result = await axios({
+          url:`/delete/${id}`,
+          method:'delete'
+        })
+        render()
+        alert('删除成功！')
+      }
+    })
+
+    // 编辑操作
+    document.querySelector('tbody').addEventListener('click',async e => {
+      if(e.target.tagName === 'A' && e.target.classList.contains('edit')){
+        document.querySelector('.editor').style.display = 'flex'
+        const id = e.target.dataset.id
+        const result = await axios({
+          url:`/get/${id}`
+        })
+
+        const uname = document.querySelector('.editor .uname')
+        const phone = document.querySelector('.editor .phone')
+        const address = document.querySelector('.editor .address')
+        uname.value = result.data.data.name
+        phone.value = result.data.data.phoneNumber
+        address.value = result.data.data.address  
+        
+        document.querySelector('.cancel').addEventListener('click', () => {
+          document.querySelector('.editor').style.display = 'none'
+        })
+
+        document.querySelector('.confirm').addEventListener('click', async () => {
+          await axios({
+            url:'/update',
+            method:'put',
+            data:{
+              id:id,
+              name:uname.value,
+              phoneNumber:phone.value,
+              address:address.value
+            }
+          })
+
+          document.querySelector('.editor').style.display = 'none'
+          render()
+        })
+      }
+    })
+
+    
+
+    // 查询操作
+    document.querySelector('.search').addEventListener('click',async e => {
+      const keyword = document.querySelector('.searcher').value
+      queryObj.name = keyword
+
+      render()
+    })
+    
+    // 点击下一页，做临界值判断，并切换页码参数并请求最新数据
+    document.querySelector('.next').addEventListener('click', e => {
+      // console.log('下一页')
+      // 当前页小于总页数时
+      if(queryObj.pageNum < Math.ceil(totalCount / queryObj.pageSize)){
+        queryObj.pageNum++
+        document.querySelector('.page-now').innerHTML = `第 ${queryObj.pageNum} 页`
+
+        render()
+      }
+    })
+    // 点击上一页，做临界值判断，并切换页码参数并请求最新数据
+    document.querySelector('.last').addEventListener('click', () => {
+      // 当前页码大于1
+      if(queryObj.pageNum > 1){
+        queryObj.pageNum--
+        document.querySelector('.page-now').innerHTML = `第 ${queryObj.pageNum} 页`
+
+        render()
+      }
+    })
+
+  </script>
+</body>
+</html>
